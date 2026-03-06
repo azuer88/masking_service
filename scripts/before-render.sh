@@ -24,20 +24,33 @@ fi
 # Navigate to the snapshots
 cd "$SNAPSHOT_DIR" || exit 1
 
-# Process each image file
-# Matches common image extensions case-insensitively
+# Process images in parallel to keep all workers busy.
+# Each masking_client call is backgrounded; PIDs are collected so we can
+# detect failures after all jobs finish.
+pids=()
+imgs=()
+
 for img in *.[jJ][pP][gG] *.[jJ][pP][eE][gG] *.[pP][nN][gG]; do
-    # Skip if no files match the pattern
     [ -e "$img" ] || continue
-
-    # Define absolute paths for the binary
     INPUT_PATH="$(realpath "$img")"
-    OUTPUT_PATH="$(realpath "$img")" # Overwrites original for Octolapse to render masked version
+    "$BINARY_PATH" "$INPUT_PATH" "$MASK_FILE" "$INPUT_PATH" &
+    pids+=($!)
+    imgs+=("$INPUT_PATH")
+done
 
-    if ! "$BINARY_PATH" "$INPUT_PATH" "$MASK_FILE" "$OUTPUT_PATH"; then
-        echo "Error: failed to mask $INPUT_PATH" >&2
-        exit 1
+if [ ${#pids[@]} -eq 0 ]; then
+    echo "No images found in $SNAPSHOT_DIR"
+    exit 0
+fi
+
+# Wait for all jobs and report any failures
+failed=0
+for i in "${!pids[@]}"; do
+    if ! wait "${pids[$i]}"; then
+        echo "Error: failed to mask ${imgs[$i]}" >&2
+        failed=1
     fi
 done
 
-echo "Masking complete for $SNAPSHOT_DIR"
+[ "$failed" -eq 0 ] || exit 1
+echo "Masking complete for $SNAPSHOT_DIR (${#pids[@]} images)"
