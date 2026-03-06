@@ -25,7 +25,7 @@ make setup
 make
 
 # 3. Install + enable
-# Note: the unit runs as 'default', which is the OctoPrint user on OctoPi.
+# Note: the unit runs as 'default', which is the OctoPrint user on my OctoPi.
 # If OctoPrint runs as a different user on your system, edit
 # User= and Group= in systemd/masking_service.service before installing.
 sudo make install        # binaries + unit file (first-time)
@@ -36,7 +36,7 @@ sudo systemctl enable --now masking_service
 
 # 4. Send a request
 masking_client photo.jpg mask.png output.png 20
-#              ^target    ^mask    ^output     ^blur radius
+#              ^target   ^mask    ^output    ^blur radius
 ```
 
 **Mask convention:** white pixels (255) → fully blurred, black (0) → original kept, grey values → partial blend.
