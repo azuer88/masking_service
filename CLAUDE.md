@@ -18,7 +18,7 @@ The build requires no external libraries beyond the C standard library — image
 
 The project is split into three compilation units:
 
-- **`src/main.c`** — daemon entry point.  Creates the Unix stream socket at `SOCKET_PATH`, enters an accept loop, and spawns a detached `pthread` for each connection.  Logs to syslog (`LOG_DAEMON`).
+- **`src/main.c`** — daemon entry point.  Creates the Unix stream socket at `SOCKET_PATH`, then enters an accept loop that pushes client fds onto a bounded work queue.  A fixed pool of worker threads (`NUM_WORKERS=4`) drains the queue; when it is full (`QUEUE_SIZE=64`) the accept loop blocks, providing natural back-pressure.  Both constants are `#define`s at the top of the file.  Shutdown broadcasts on both condvars, lets workers drain remaining work, then joins all threads.  Logs to syslog (`LOG_DAEMON`).
 - **`src/image_proc.c`** — all image processing.  Exposes one public function: `apply_mask_blur()`.  Internally implements a 2-D integral-image box blur (O(w×h) per pass) applied three times to approximate a Gaussian, then lerps between the original and blurred pixel using the mask intensity as alpha.  Mask is resampled to the target's dimensions via nearest-neighbour if they differ.
 - **`src/client.c`** — standalone CLI that connects to the socket, sends a `MaskRequest`, and prints the `MaskResponse`.  Not linked into the service.
 
