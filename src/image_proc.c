@@ -18,6 +18,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>   /* strcasecmp */
+#include <errno.h>
 #include <syslog.h>
 
 /* -------------------------------------------------------------------------
@@ -126,14 +127,16 @@ int apply_mask_blur(const char *target_path,
     int tw, th, tc;
     unsigned char *target = stbi_load(target_path, &tw, &th, &tc, 0);
     if (!target) {
-        syslog(LOG_ERR, "Failed to load target image: %s", target_path);
+        syslog(LOG_ERR, "Failed to load target image: %s (%s)",
+               target_path, stbi_failure_reason());
         return ERR_LOAD_TARGET;
     }
 
     int mw, mh, mc;
     unsigned char *mask_raw = stbi_load(mask_path, &mw, &mh, &mc, 1);
     if (!mask_raw) {
-        syslog(LOG_ERR, "Failed to load mask image: %s", mask_path);
+        syslog(LOG_ERR, "Failed to load mask image: %s (%s)",
+               mask_path, stbi_failure_reason());
         stbi_image_free(target);
         return ERR_LOAD_MASK;
     }
@@ -207,7 +210,8 @@ int apply_mask_blur(const char *target_path,
     }
 
     if (ret != 0)
-        syslog(LOG_ERR, "Failed to write output image: %s", output_path);
+        syslog(LOG_ERR, "Failed to write output image: %s (%s)",
+               output_path, strerror(errno));
 
     free(blurred);
     if (mask_needs_free) free(mask);
