@@ -1,0 +1,20 @@
+# Build output
+bin/
+
+# Downloaded vendor headers (regenerated with `make setup`)
+vendor/
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Compiled object files (if added to the build in future)
+*.o
+*.a
+
+# OS
+.DS_Store
+Thumbs.db

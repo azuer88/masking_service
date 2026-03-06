@@ -1,0 +1,49 @@
+[Unit]
+Description=Image Masking Service
+Documentation=file:/usr/local/share/doc/masking_service/README.md
+After=local-fs.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/masking_service
+Restart=on-failure
+RestartSec=3
+
+# Create /run/masking_service/ with mode 0755 owned by the service user.
+# The daemon will create its socket inside this directory.
+RuntimeDirectory=masking_service
+RuntimeDirectoryMode=0755
+
+# Drop privileges — run as a dedicated low-privilege user
+User=masking
+Group=masking
+
+# Allow clients in the 'masking' group to use the socket
+SupplementaryGroups=masking
+
+# Hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=read-only
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+RestrictRealtime=true
+RestrictNamespaces=true
+
+# Allow read access to common image directories at runtime via
+# ReadWritePaths/ReadOnlyPaths overrides in a drop-in file, e.g.:
+#   /etc/systemd/system/masking_service.service.d/paths.conf
+#
+# Example paths.conf:
+#   [Service]
+#   ReadOnlyPaths=/home /srv/images
+#   ReadWritePaths=/srv/images/output
+
+[Install]
+WantedBy=multi-user.target
