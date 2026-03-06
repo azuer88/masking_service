@@ -52,5 +52,6 @@ ReadWritePaths=/home/default/octolapse
 To change the worker count:
 ```ini
 [Service]
-Environment=MASKING_WORKERS=8
+Environment=MASKING_WORKERS=2
 ```
+> **Warning:** each worker consumes a full CPU core while processing an image. On low-powered hardware (e.g. Raspberry Pi 3/4) setting this too high will starve OctoPrint and may cause print failures. Start with `1` or `2` and increase only if the hardware can sustain the load.

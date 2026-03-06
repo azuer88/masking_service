@@ -38,3 +38,5 @@ masking_client photo.jpg mask.png output.png 20
 ```
 
 **Mask convention:** white pixels (255) → fully blurred, black (0) → original kept, grey values → partial blend.
+
+> **Warning:** each worker consumes a full CPU core while processing an image. The default of 4 workers is suitable for a desktop/server. On low-powered hardware (e.g. Raspberry Pi 3/4) this will starve OctoPrint and may cause print failures — set `MASKING_WORKERS=1` or `2` via a systemd drop-in and increase only if the hardware can sustain the load.

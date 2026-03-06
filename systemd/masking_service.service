@@ -7,9 +7,14 @@ After=local-fs.target
 Type=simple
 ExecStart=/usr/local/bin/masking_service
 
-# Number of worker threads (1-64). Override in a drop-in file:
+# Number of worker threads (1-64).
+# WARNING: each worker consumes a full CPU core while processing an image.
+# Setting this too high on low-powered hardware (e.g. Raspberry Pi) will
+# starve OctoPrint and may cause print failures. Start with 1 or 2 on a
+# Pi 3/4 and increase only if the hardware can sustain the load.
+# Override in a drop-in file:
 #   [Service]
-#   Environment=MASKING_WORKERS=8
+#   Environment=MASKING_WORKERS=2
 Environment=MASKING_WORKERS=4
 Restart=on-failure
 RestartSec=3
