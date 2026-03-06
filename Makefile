@@ -17,7 +17,7 @@ STB_IMAGE_WRITE := $(VENDOR_DIR)/stb_image_write.h
 
 STB_BASE_URL := https://raw.githubusercontent.com/nothings/stb/master
 
-.PHONY: all setup clean install uninstall
+.PHONY: all setup clean install install-bin install-unit uninstall
 
 all: check-deps $(SERVICE_BIN) $(CLIENT_BIN)
 
@@ -54,15 +54,26 @@ $(CLIENT_BIN): $(CLIENT_SRCS) include/protocol.h | $(BIN_DIR)
 
 ## ── Install / Uninstall ─────────────────────────────────────────────────────
 
-install: all
-	install -Dm 755 $(SERVICE_BIN) /usr/local/bin/masking_service
-	install -Dm 755 $(CLIENT_BIN)  /usr/local/bin/masking_client
-	install -Dm 644 systemd/masking_service.service \
-	    /etc/systemd/system/masking_service.service
+# Install everything (binaries + unit file)
+install: install-bin install-unit
 	@echo ""
 	@echo "Installed.  To enable and start the service:"
 	@echo "  sudo systemctl daemon-reload"
 	@echo "  sudo systemctl enable --now masking_service"
+
+# Install/update binaries only — no systemd reload needed
+install-bin: all
+	install -Dm 755 $(SERVICE_BIN) /usr/local/bin/masking_service
+	install -Dm 755 $(CLIENT_BIN)  /usr/local/bin/masking_client
+	@echo "Binaries installed.  Restart the service to apply:"
+	@echo "  sudo systemctl restart masking_service"
+
+# Install/update the systemd unit file only
+install-unit:
+	install -Dm 644 systemd/masking_service.service \
+	    /etc/systemd/system/masking_service.service
+	@echo "Unit file installed.  Reload systemd to apply:"
+	@echo "  sudo systemctl daemon-reload && sudo systemctl restart masking_service"
 
 uninstall:
 	systemctl stop masking_service 2>/dev/null || true
