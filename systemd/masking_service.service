@@ -19,17 +19,15 @@ RestartSec=3
 RuntimeDirectory=masking_service
 RuntimeDirectoryMode=0755
 
-# Drop privileges — run as a dedicated low-privilege user
-User=masking
-Group=masking
-
-# Allow clients in the 'masking' group to use the socket
-SupplementaryGroups=masking
+# Run as the same user as OctoPrint/Octolapse so it has access to all
+# snapshot directories and /tmp paths created by those processes.
+User=default
+Group=default
 
 # Hardening
 NoNewPrivileges=true
 ProtectSystem=strict
-ProtectHome=read-only
+ProtectHome=false
 PrivateTmp=false
 PrivateDevices=true
 ProtectKernelTunables=true
