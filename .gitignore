@@ -4,6 +4,9 @@ bin/
 # Downloaded vendor headers (regenerated with `make setup`)
 vendor/
 
+# testing
+test/
+
 # Editor / IDE
 .vscode/
 .idea/
