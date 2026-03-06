@@ -9,7 +9,7 @@
 
 SNAPSHOT_DIR="$2"
 MASK_FILE="/home/default/octolapse/mask.png"  # EDIT THIS PATH
-BINARY_PATH="/home/default/masking_service/bin/masking_client" # EDIT THIS PATH
+BINARY_PATH="/usr/local/bin/masking_client" # EDIT THIS PATH
 
 # Validate prerequisites
 [ -x "$BINARY_PATH" ] || { echo "Error: client binary not found: $BINARY_PATH" >&2; exit 1; }
