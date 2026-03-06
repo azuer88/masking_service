@@ -41,14 +41,16 @@ MemoryDenyWriteExecute=true
 RestrictRealtime=true
 RestrictNamespaces=true
 
-# Allow read access to common image directories at runtime via
-# ReadWritePaths/ReadOnlyPaths overrides in a drop-in file, e.g.:
+# Writable paths required by the service.
+# ProtectSystem=strict makes the whole filesystem read-only by default;
+# every directory the service needs to write must be listed here.
+ReadWritePaths=/tmp
+
+# For paths outside /tmp (e.g. /home/default/octolapse) use a drop-in:
 #   /etc/systemd/system/masking_service.service.d/paths.conf
 #
-# Example paths.conf:
 #   [Service]
-#   ReadOnlyPaths=/home /srv/images
-#   ReadWritePaths=/srv/images/output
+#   ReadWritePaths=/home/default/octolapse
 
 [Install]
 WantedBy=multi-user.target
