@@ -6,9 +6,13 @@
  * drains the queue, each processing one request at a time.  When the queue
  * is full the main thread blocks, providing natural back-pressure.
  *
- * Tuning constants:
- *   NUM_WORKERS – number of worker threads (default 4)
- *   QUEUE_SIZE  – max queued connections before back-pressure (default 64)
+ * Tuning:
+ *   MASKING_WORKERS env var – number of worker threads (default 4)
+ *   QUEUE_SIZE #define      – max queued connections before back-pressure (default 64)
+ *
+ * Set MASKING_WORKERS in the systemd unit drop-in:
+ *   [Service]
+ *   Environment=MASKING_WORKERS=8
  */
 
 #include <stdio.h>
@@ -27,8 +31,9 @@
 #include "../include/protocol.h"
 #include "image_proc.h"
 
-#define NUM_WORKERS  4
-#define QUEUE_SIZE  64
+#define NUM_WORKERS_DEFAULT  4
+#define NUM_WORKERS_MAX      64
+#define QUEUE_SIZE           64
 
 /* -------------------------------------------------------------------------
  * Bounded work queue
@@ -185,8 +190,24 @@ static void on_signal(int sig)
 int main(void)
 {
     openlog("masking_service", LOG_PID | LOG_CONS, LOG_DAEMON);
+
+    /* Resolve worker count from environment, falling back to the default */
+    int num_workers = NUM_WORKERS_DEFAULT;
+    const char *env = getenv("MASKING_WORKERS");
+    if (env) {
+        char *end;
+        long v = strtol(env, &end, 10);
+        if (*end != '\0' || v < 1 || v > NUM_WORKERS_MAX) {
+            syslog(LOG_ERR,
+                   "Invalid MASKING_WORKERS=%s (must be 1-%d), using default %d",
+                   env, NUM_WORKERS_MAX, NUM_WORKERS_DEFAULT);
+        } else {
+            num_workers = (int)v;
+        }
+    }
+
     syslog(LOG_INFO, "masking_service starting (%d workers, queue depth %d)",
-           NUM_WORKERS, QUEUE_SIZE);
+           num_workers, QUEUE_SIZE);
 
     struct sigaction sa = {0};
     sa.sa_handler = on_signal;
@@ -198,10 +219,15 @@ int main(void)
     /* Initialise the work queue and start workers */
     wq_init(&wq);
 
-    pthread_t workers[NUM_WORKERS];
-    for (int i = 0; i < NUM_WORKERS; i++) {
+    pthread_t *workers = malloc((size_t)num_workers * sizeof(pthread_t));
+    if (!workers) {
+        syslog(LOG_ERR, "malloc workers: %s", strerror(errno));
+        return EXIT_FAILURE;
+    }
+    for (int i = 0; i < num_workers; i++) {
         if (pthread_create(&workers[i], NULL, worker, NULL) != 0) {
             syslog(LOG_ERR, "pthread_create worker %d: %s", i, strerror(errno));
+            free(workers);
             return EXIT_FAILURE;
         }
     }
@@ -252,9 +278,10 @@ int main(void)
 
     /* Graceful shutdown: drain the queue, then join workers */
     wq_shutdown(&wq);
-    for (int i = 0; i < NUM_WORKERS; i++)
+    for (int i = 0; i < num_workers; i++)
         pthread_join(workers[i], NULL);
     wq_destroy(&wq);
+    free(workers);
 
     if (server_fd >= 0)
         close(server_fd);

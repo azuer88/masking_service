@@ -6,6 +6,11 @@ After=local-fs.target
 [Service]
 Type=simple
 ExecStart=/usr/local/bin/masking_service
+
+# Number of worker threads (1-64). Override in a drop-in file:
+#   [Service]
+#   Environment=MASKING_WORKERS=8
+Environment=MASKING_WORKERS=4
 Restart=on-failure
 RestartSec=3
 
