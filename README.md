@@ -11,7 +11,7 @@
 4. Per-pixel lerp: `output = original × (1 − mask/255) + blurred × (mask/255)`
 5. Write output (format inferred from extension; defaults to PNG)
 
-**Service** (`main.c`) — spawns a detached pthread per connection, logs to syslog.
+**Service** (`main.c`) — fixed worker pool (default 4, configurable via `MASKING_WORKERS` env var) draining a bounded work queue. Logs to syslog.
 
 ---
 
@@ -26,7 +26,6 @@ make
 
 # 3. Install + enable
 sudo make install
-sudo useradd -r -s /sbin/nologin masking   # required by the unit file
 sudo systemctl daemon-reload
 sudo systemctl enable --now masking_service
 

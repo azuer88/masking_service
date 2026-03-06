@@ -37,10 +37,20 @@ White (255) pixels in the mask map to fully blurred output; black (0) pixels pre
 
 ## systemd unit notes
 
-The unit (`systemd/masking_service.service`) runs the daemon as a dedicated `masking` user/group which must be created before installation:
+The unit runs as `User=default` / `Group=default` — the same user as OctoPrint/Octolapse — so it has write access to all snapshot paths and `/tmp` directories those processes create. No extra system user is needed.
+
+`ProtectSystem=strict` makes the filesystem read-only by default; `/tmp` is explicitly listed in `ReadWritePaths`. For paths outside `/tmp` (e.g. `/home/default/octolapse`), add them via a drop-in:
 
 ```bash
-sudo useradd -r -s /sbin/nologin masking
+sudo systemctl edit masking_service
+```
+```ini
+[Service]
+ReadWritePaths=/home/default/octolapse
 ```
 
-Image paths the service needs to read/write must be granted via a drop-in file — see the comments in the unit file for the `ReadOnlyPaths`/`ReadWritePaths` pattern.
+To change the worker count:
+```ini
+[Service]
+Environment=MASKING_WORKERS=8
+```
