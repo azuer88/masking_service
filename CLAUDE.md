@@ -8,7 +8,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 make setup    # download stb vendor headers (first-time only, requires curl)
 make          # build bin/masking_service and bin/masking_client
 make clean    # remove bin/
-sudo make install    # install to /usr/local/bin + /etc/systemd/system/
+sudo make install        # binaries + unit file (first-time)
+sudo make install-bin    # binaries only — no systemd reload needed
+sudo make install-unit   # unit file only — run daemon-reload after
 sudo make uninstall
 ```
 
