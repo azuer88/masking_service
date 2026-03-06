@@ -25,6 +25,9 @@ make setup
 make
 
 # 3. Install + enable
+# Note: the unit runs as 'default', which is the OctoPrint user on OctoPi.
+# If OctoPrint runs as a different user on your system, edit
+# User= and Group= in systemd/masking_service.service before installing.
 sudo make install
 sudo systemctl daemon-reload
 sudo systemctl enable --now masking_service

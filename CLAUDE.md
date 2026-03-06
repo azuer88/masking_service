@@ -37,7 +37,7 @@ White (255) pixels in the mask map to fully blurred output; black (0) pixels pre
 
 ## systemd unit notes
 
-The unit runs as `User=default` / `Group=default` — the same user as OctoPrint/Octolapse — so it has write access to all snapshot paths and `/tmp` directories those processes create. No extra system user is needed.
+The unit runs as `User=default` / `Group=default` — the same user as OctoPrint/Octolapse — so it has write access to all snapshot paths and `/tmp` directories those processes create. No extra system user is needed. `default` is the OctoPrint user on OctoPi; adjust `User=` and `Group=` in the unit file if OctoPrint runs as a different user on your system.
 
 `ProtectSystem=strict` makes the filesystem read-only by default; `/tmp` is explicitly listed in `ReadWritePaths`. For paths outside `/tmp` (e.g. `/home/default/octolapse`), add them via a drop-in:
 
