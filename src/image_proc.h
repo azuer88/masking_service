@@ -1,6 +1,10 @@
 #ifndef IMAGE_PROC_H
 #define IMAGE_PROC_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*
  * apply_mask_blur
  *
@@ -20,5 +24,9 @@ int apply_mask_blur(const char *target_path,
                     const char *mask_path,
                     const char *output_path,
                     int         blur_radius);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* IMAGE_PROC_H */
