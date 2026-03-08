@@ -11,7 +11,21 @@ SNAPSHOT_DIR="$2"
 MASK_FILE="/home/default/octolapse/mask.png"  # EDIT THIS PATH
 BINARY_PATH="/usr/local/bin/masking_client" # EDIT THIS PATH
 
-# Progress reporting — set OCTOPRINT_API_KEY in the environment or below.
+# Load .env from the script's directory or its parent (if present).
+# Values already in the environment take precedence.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+for _env_file in "$SCRIPT_DIR/.env" "$SCRIPT_DIR/../.env"; do
+    if [ -f "$_env_file" ]; then
+        set -a
+        # shellcheck source=/dev/null
+        source "$_env_file"
+        set +a
+        break
+    fi
+done
+unset _env_file SCRIPT_DIR
+
+# Progress reporting — set OCTOPRINT_API_KEY in the environment or .env file.
 # Leave OCTOPRINT_API_KEY empty to disable progress updates silently.
 OCTOPRINT_HOST="${OCTOPRINT_HOST:-http://localhost:5000}"
 OCTOPRINT_API_KEY="${OCTOPRINT_API_KEY:-}"
