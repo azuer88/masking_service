@@ -37,7 +37,7 @@ send_progress() {
         -H "Content-Type: application/json" \
         -H "X-Api-Key: $OCTOPRINT_API_KEY" \
         -d "{\"percent\": $percent}" \
-        "$OCTOPRINT_HOST/api/plugin/octolapse/renderProgress" > /dev/null 2>&1 || true
+        "$OCTOPRINT_HOST/plugin/octolapse/renderProgress" > /dev/null 2>&1 || true
 }
 
 # Validate prerequisites
