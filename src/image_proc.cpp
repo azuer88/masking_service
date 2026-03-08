@@ -168,8 +168,8 @@ static bool acl_blur_plane(const uint8_t *src, uint8_t *dst,
      * ACL), then alternate between them to ping-pong across the tensor pair.
      */
     CLGaussian5x5 fwd, bwd;          /* fwd: ping→pong,  bwd: pong→ping */
-    fwd.configure(&ping, &pong, BorderMode::REFLECT);
-    bwd.configure(&pong, &ping, BorderMode::REFLECT);
+    fwd.configure(&ping, &pong, BorderMode::REPLICATE);
+    bwd.configure(&pong, &ping, BorderMode::REPLICATE);
 
     ping.allocator()->allocate();
     pong.allocator()->allocate();
