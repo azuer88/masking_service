@@ -5,7 +5,7 @@
  *
  *   1. ARM Compute Library (HAVE_ACL)  — direct Mali OpenCL via ACL.
  *      The expensive Gaussian blur is dispatched to the GPU; de-interleave,
- *      blend, and I/O remain on the CPU.  Requires ACL ≥ 22.x.
+ *      blend, and I/O remain on the CPU.  Requires ACL ≥ 20.x.
  *
  *   2. OpenCV UMat (HAVE_OPENCV)  — OpenCL through OpenCV's transparent
  *      GPU/CPU dispatch; both blur and blend run on-device.
@@ -163,12 +163,13 @@ static bool acl_blur_plane(const uint8_t *src, uint8_t *dst,
     ping.allocator()->init(plane_info);
     pong.allocator()->init(plane_info);
 
-    /* Configure three CLGaussian5x5 instances to ping-pong across the same
-     * pair of tensors.  ACL functions must be configured before allocation. */
-    CLGaussian5x5 pass1, pass2, pass3;
-    pass1.configure(&ping, &pong, BorderMode::REFLECT);
-    pass2.configure(&pong, &ping, BorderMode::REFLECT);
-    pass3.configure(&ping, &pong, BorderMode::REFLECT);
+    /*
+     * Configure two CLGaussian5x5 instances before allocation (required by
+     * ACL), then alternate between them to ping-pong across the tensor pair.
+     */
+    CLGaussian5x5 fwd, bwd;          /* fwd: ping→pong,  bwd: pong→ping */
+    fwd.configure(&ping, &pong, BorderMode::REFLECT);
+    bwd.configure(&pong, &ping, BorderMode::REFLECT);
 
     ping.allocator()->allocate();
     pong.allocator()->allocate();
@@ -176,15 +177,13 @@ static bool acl_blur_plane(const uint8_t *src, uint8_t *dst,
     plane_to_tensor(ping, src, w, h);
 
     for (int i = 0; i < blur_passes; ++i) {
-        pass1.run();          /* ping → pong */
-        if (i + 1 < blur_passes) {
-            pass2.run();      /* pong → ping */
-            if (i + 2 < blur_passes)
-                pass3.run();  /* ping → pong */
-        }
+        if (i % 2 == 0)
+            fwd.run();   /* ping → pong */
+        else
+            bwd.run();   /* pong → ping */
     }
 
-    /* Result lands in pong for odd pass counts, ping for even. */
+    /* After N passes: result is in pong if N is odd, ping if N is even. */
     CLTensor &result = (blur_passes % 2 == 1) ? pong : ping;
     tensor_to_plane(result, dst, w, h);
     return true;

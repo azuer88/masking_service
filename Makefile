@@ -21,13 +21,30 @@ STB_BASE_URL := https://raw.githubusercontent.com/nothings/stb/master
 
 ## ── Optional GPU backends ────────────────────────────────────────────────────
 #
-#  Both are detected automatically via pkg-config at build time.
-#  Set ACL_PREFIX or OCV_PREFIX on the make command line to override the
-#  pkg-config search path if headers/libs are in a non-standard location.
+#  Both backends are detected automatically at build time.
+#  ACL is probed via pkg-config first; if that fails (Debian bookworm arm64
+#  ships libarm-compute-dev without a .pc file) it falls back to the known
+#  multiarch paths.  Override by setting ACL_CFLAGS/ACL_LIBS on the command
+#  line.
 
+# ARM Compute Library — pkg-config, then Debian multiarch fallback
 ACL_CFLAGS := $(shell pkg-config --cflags arm-compute-library 2>/dev/null)
 ACL_LIBS   := $(shell pkg-config --libs   arm-compute-library 2>/dev/null)
 
+ifeq ($(ACL_LIBS),)
+  _ACL_MULTIARCH := $(shell dpkg-architecture -qDEB_HOST_MULTIARCH 2>/dev/null \
+                            || echo aarch64-linux-gnu)
+  _ACL_HDR := /usr/include/$(_ACL_MULTIARCH)/arm_compute/runtime/CL/CLScheduler.h
+  _ACL_LIB := /usr/lib/$(_ACL_MULTIARCH)/libarm_compute.so
+  ifneq ($(wildcard $(_ACL_HDR)),)
+  ifneq ($(wildcard $(_ACL_LIB)),)
+    ACL_CFLAGS := -I/usr/include/$(_ACL_MULTIARCH)
+    ACL_LIBS   := -larm_compute -larm_compute_core
+  endif
+  endif
+endif
+
+# OpenCV — pkg-config (opencv4 preferred, opencv as fallback)
 OCV_CFLAGS := $(shell pkg-config --cflags opencv4 2>/dev/null \
                    || pkg-config --cflags opencv  2>/dev/null)
 OCV_LIBS   := $(shell pkg-config --libs   opencv4 2>/dev/null \
