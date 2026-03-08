@@ -11,6 +11,21 @@ SNAPSHOT_DIR="$2"
 MASK_FILE="/home/default/octolapse/mask.png"  # EDIT THIS PATH
 BINARY_PATH="/usr/local/bin/masking_client" # EDIT THIS PATH
 
+# Progress reporting — set OCTOPRINT_API_KEY in the environment or below.
+# Leave OCTOPRINT_API_KEY empty to disable progress updates silently.
+OCTOPRINT_HOST="${OCTOPRINT_HOST:-http://localhost:5000}"
+OCTOPRINT_API_KEY="${OCTOPRINT_API_KEY:-}"
+
+send_progress() {
+    local percent="$1"
+    [ -z "$OCTOPRINT_API_KEY" ] && return 0
+    curl -sf -X POST \
+        -H "Content-Type: application/json" \
+        -H "X-Api-Key: $OCTOPRINT_API_KEY" \
+        -d "{\"percent\": $percent}" \
+        "$OCTOPRINT_HOST/api/plugin/octolapse/renderProgress" > /dev/null
+}
+
 # Validate prerequisites
 [ -x "$BINARY_PATH" ] || { echo "Error: client binary not found: $BINARY_PATH" >&2; exit 1; }
 [ -f "$MASK_FILE"   ] || { echo "Error: mask file not found: $MASK_FILE" >&2; exit 1; }
@@ -43,14 +58,34 @@ if [ ${#pids[@]} -eq 0 ]; then
     exit 0
 fi
 
-# Wait for all jobs and report any failures
-failed=0
+# Wait for jobs as they complete (wait -n: any job), reporting progress after each.
+# Build a pid→index map so we can identify which image failed.
+declare -A pid_to_idx
 for i in "${!pids[@]}"; do
-    if ! wait "${pids[$i]}"; then
-        echo "Error: failed to mask ${imgs[$i]}" >&2
+    pid_to_idx[${pids[$i]}]=$i
+done
+
+total=${#pids[@]}
+completed=0
+failed=0
+
+send_progress 0
+
+while [ $completed -lt $total ]; do
+    # Wait for any background job to finish; capture its exit status and PID.
+    wait -n -p finished_pid
+    exit_status=$?
+    completed=$((completed + 1))
+
+    if [ $exit_status -ne 0 ]; then
+        idx=${pid_to_idx[$finished_pid]}
+        echo "Error: failed to mask ${imgs[$idx]}" >&2
         failed=1
     fi
+
+    percent=$(( completed * 100 / total ))
+    send_progress "$percent"
 done
 
 [ "$failed" -eq 0 ] || exit 1
-echo "Masking complete for $SNAPSHOT_DIR (${#pids[@]} images)"
+echo "Masking complete for $SNAPSHOT_DIR ($total images)"
